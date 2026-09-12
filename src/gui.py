@@ -1,31 +1,21 @@
-import os
-from math import ceil
 from pathlib import Path
 
 from PySide6.QtWidgets import (
     QApplication,
-    QButtonGroup,
     QCheckBox,
     QComboBox,
     QFileDialog,
     QGridLayout,
-    QHBoxLayout,
     QLabel,
     QLineEdit,
-    QListWidget,
     QMainWindow,
     QMessageBox,
     QProgressBar,
     QPushButton,
-    QRadioButton,
-    QSlider,
     QSpinBox,
-    QTabWidget,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtCore import QObject, QThread, Signal, Slot
 
 import core
 
@@ -56,9 +46,9 @@ class MainWindow(QMainWindow):
         output_browse = QPushButton("Browse")
         output_browse.clicked.connect(self.browse_output)
 
-        size_label = QLabel("Target size (MB)")
-        self.size_spinbox = QSpinBox(minimum=1, maximum=300)
-        self.size_spinbox.setValue(20)
+        target_label = QLabel("Target size (MB)")
+        self.target_spinbox = QSpinBox(minimum=1, maximum=300)
+        self.target_spinbox.setValue(20)
 
         fps_label = QLabel("Higher framerate*")
         fps_label.setToolTip(
@@ -90,8 +80,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.output_zone, 1, 1)
         layout.addWidget(output_browse, 1, 2)
 
-        layout.addWidget(size_label, 2, 0)
-        layout.addWidget(self.size_spinbox, 2, 1)
+        layout.addWidget(target_label, 2, 0)
+        layout.addWidget(self.target_spinbox, 2, 1)
 
         layout.addWidget(fps_label, 3, 0)
         layout.addWidget(self.fps_checkbox, 3, 1)
@@ -107,8 +97,8 @@ class MainWindow(QMainWindow):
         run_button = QPushButton("Run")
         run_button.clicked.connect(self.run)
 
-        test_button = QPushButton("Preview FFMPEG commands")
-        test_button.clicked.connect(self.test)
+        test_button = QPushButton("Preview settings")
+        test_button.clicked.connect(self.preview)
 
         self.progressbar = QProgressBar()
         self.progressbar.setMaximum(100)
@@ -166,25 +156,27 @@ class MainWindow(QMainWindow):
         if not allow_overwrite:
             return
 
+        self.set_progressbar(0)
+
         work = core.Work(
             self.input_zone.text(),
             self.output_zone.text(),
             self.fps_checkbox.isChecked(),
             self.res_combobox.currentText(),
-            self.size_spinbox.value(),
+            self.target_spinbox.value(),
             compatibility=self.compat_checkbox.isChecked(),
             callback=self.set_progressbar,
         )
         work.run()
 
-    def test(self):
+    def preview(self):
         try:
             work = core.Work(
                 self.input_zone.text(),
                 self.output_zone.text(),
                 self.fps_checkbox.isChecked(),
                 self.res_combobox.currentText(),
-                self.size_spinbox.value(),
+                self.target_spinbox.value(),
                 compatibility=self.compat_checkbox.isChecked(),
                 callback=self.set_progressbar,
             )
@@ -194,9 +186,25 @@ class MainWindow(QMainWindow):
             messagebox = QMessageBox()
             messagebox.setIcon(QMessageBox.Icon.Information)
             messagebox.setWindowTitle("FFMPEG Commands")
-            messagebox.setText(
-                f"First pass FFMPEG command:\n{' '.join(pass1)}\n\nSecond pass FFMPEG command:\n{' '.join(pass2)}"
+
+            message = (
+                f"{' Preview ':=^50}\n"
+                f"File paths\n"
+                f"    Input path           : {work.input}\n"
+                f"    Output path          : {work.output}\n"
+                f"Video settings\n"
+                f"    Resolution           : {work.resolution}\n"
+                f"    Duration             : {work.duration} s\n"
+                f"    Framerate            : {work.framerate} fps\n"
+                f"    Target size          : {work.target_size} MB\n"
+                f"    Enable compatibility : {work.compatibility}\n"
+                f"FFMPEG Commands\n"
+                f"    First pass           : {' '.join(pass1)}\n"
+                f"    Second pass          : {' '.join(pass2)}\n"
+                f"{'':=^50}"
             )
+
+            messagebox.setText(message)
             messagebox.exec()
         except Exception:
             return

@@ -1,57 +1,60 @@
-# [FR] Compresseur vidéo discord
+# Video Clip Compressor
+
+[![lang - EN](https://img.shields.io/badge/lang-EN-d5372d?style=for-the-badge)](README.md)
+[![lang - FR](https://img.shields.io/badge/lang-FR-2d3181?style=for-the-badge)](README.fr.md)
+
+This program is used to compress short videos to a specific size so they can be sent on *some* platforms.
+
+## Dependencies
+- [pymediainfo](https://github.com/sbraz/pymediainfo)
+- [FFMPEG](https://ffmpeg.org/) (see [NOTICE](./NOTICE))
+- [PySide6](https://wiki.qt.io/Qt_for_Python) (see [NOTICE](./NOTICE))
+
+# Usage
+## CLI
+| Parameter              | Default    | Possible values                          | Explanation                        |
+| ---------------------- | ---------- | ---------------------------------------- | ---------------------------------- |
+| `-i` `--input`         |            |                                          | Input video file path              |
+| `-o` `--output`        |            |                                          | Output video file path             |
+| `-t` `--target`        | `20`       | `0 < Any`                                | Target file size in MB             |
+| `-f` `--framerate`     | Not used   |                                          | Use higher framerate               |
+| `-r` `--resolution`    | `1280:720` | `Any` (See libx264 and/or libsvtav1 doc) | Set output resolution              |
+| `-c` `--compatibility` | Not used   |                                          | Use older codecs (h264, aac)       |
+| `-p` `--preview`       | Not used   |                                          | Show work infos without running it |
 
 
-Ce programme en python sert a compresser des vidéos/clips pour qu'il fassent moins de 25Mo pour pouvoir les envoyer sur discord
+### Examples
+Encode a `input.mov` video to a `output.mkv` video with 720p60 h264 video and aac audio, targeting the default output size.
+```bash
+$ uv run .\src\cli.py -i input.mov -o output.mkv -f -c
+```
+---
 
-Il utilise les librairies suivantes:
+Encode a `clip.mp4` video to a `clip_compressed.mkv` video with 1080p30 AV1 video and opus audio, targeting 50MB.
+```bash
+$ uv run .\src\cli.py -i clip.mp4 -o clip_compressed.mkv -r 1920:1080 -t 50
+```
+---
 
-- **subprocess**
-- **pymediainfo**
-- **datetime**
-- **argparse**
-- **os**
-- **gooey** (Seulement GUI)
-- **re**
-- **tqdm**
+Preview encode work of a `clip.mp4` video to a `clip_compressed.mkv` video with 540p30 AV1 video and opus audio, targeting 50MB.
+```bash
+$ uv run .\src\cli.py -i clip.mp4 -o clip_compressed.mkv -r 960:540 -t 50 
+==================== Preview =====================
+File paths
+    Input path           : clip.mp4
+    Output path          : clip_compressed.mkv
+Video settings
+    Resolution           : 960:540
+    Duration             : 10 s
+    Framerate            : 30 fps
+    Target size          : 50 MB
+    Enable compatibility : False
+FFMPEG Commands
+    First pass           : ffmpeg -y -i clip.mp4 -c:v libsvtav1 -preset 6 -svtav1-params rc=2:pred-struct=1:tbr=16220k -passlogfile . -r 30 -vf scale=960:540 -pass 1 -an -f null NUL
+    Second pass          : ffmpeg -y -i clip.mp4 -c:v libsvtav1 -preset 6 -svtav1-params rc=2:pred-struct=1:tbr=16220k -passlogfile . -r 30 -vf scale=960:540 -pass 2 clip_compressed.mkv
+==================================================
+```
 
-Vous avez besoin d'avoir ffmpeg d'installé, ou l'executable de ffmpeg.exe à la racine du programme
-
-## Version GUI
-Interface graphique, en anglais
-
-## Version CLI
-Arguments et syntaxe:
-- `-q --quality` : Qualité de la vidéo entre 1 et 3 (Définit la résolution de sortie : 720p, 900p, 1080p)
-- `-f --fluid` : Séléctionne 60fps
-- `-on --output-name` : Permet de définir un nom de sortie pour la vidéo
-- `-od --output-dir` : Permet de choisir un répertoire de sortie
-- `-y` : Ré-écrit le fichier de sortie s'il existe déjà
-
-# [EN] Discord video compressor
-
-This python program is used to compress videos/clips to make them under 25Mb to be sent on discord
-
-
-It uses the following libraries:
-
-- **subprocess**
-- **pymediainfo**
-- **datetime**
-- **argparse**
-- **os**
-- **gooey** (Only GUI)
-- **re**
-- **tqdm**
-
-You need to have ffmpeg installed, or the ffmpeg.exe executable in the program's root directory
-
-## Classic Version
-Graphical interface, in english
-
-## CLI Version
-Arguments and syntax:
-- `-q --quality` : Video quality between 1 and 3 (Sets the output resolution : 720p, 900p, 1080p)
-- `-f --fluid` : Selects 60fps
-- `-on --output-name` : Allows you to set an output name
-- `-od --output-dir` : Allows you to set an output directory
-- `-y` : Overwrites output file if it allready exists
+### GUI
+I'm sure you can figure it out without help..\
+![Interface on windows 10](./win10_interface.png)

@@ -1,16 +1,11 @@
 import platform
 import re
 import subprocess
-import sys
 from collections.abc import Callable
-from datetime import datetime
 from math import ceil, floor
 from pathlib import Path
 
 from pymediainfo import MediaInfo
-from tqdm import tqdm
-
-import threading
 
 IS_WINDOWS = platform.system() == "Windows"
 NULL_DEVICE = "NUL" if IS_WINDOWS else "/dev/null"
@@ -44,16 +39,14 @@ class Work:
             print("Invalid parameters")
             return
 
-        self.duration: float = self.get_duration()
-        self.framerate: float = self.get_framerate()
+        self.duration, self.framerate, self.has_audio = self.get_metadata()
         self.bitrate: int = self.calculate_bitrate()
-        print(self.bitrate)
+        # print(self.bitrate)
 
         self.ffmpeg_commands = self.make_ffmpeg_commands()
-        print(" ".join(self.ffmpeg_commands[0]))
-        print(" ".join(self.ffmpeg_commands[1]))
 
     def is_valid(self) -> bool:
+        """Tests if input parameters are all valid"""
         if not self.input.exists() or not self.input.is_file():
             print("Input doesn't exist or is not a file")
             return False
@@ -68,21 +61,23 @@ class Work:
 
         return True
 
-    def get_duration(self) -> float:
+    def get_metadata(self) -> tuple[int, float, bool]:
+        """Returns the video duration, framerate and wether is has audio"""
         metadata = MediaInfo.parse(self.input)
-        duration: float = metadata.tracks[0].duration // 1000
 
-        return duration
-
-    def get_framerate(self) -> float:
-        metadata = MediaInfo.parse(self.input)
+        duration: int = metadata.tracks[0].duration // 1000
         framerate: float = float(metadata.tracks[0].frame_rate)
-        assert isinstance(framerate, float)
+        has_audio: bool = len(metadata.audio_tracks) > 0
 
-        return framerate
+        return duration, framerate, has_audio
 
     def calculate_bitrate(self) -> int:
-        audio_bitrate = AAC_BITRATE if self.compatibility else OPUS_BITRATE
+        """Calculates and returns the target bitrate taking into account the presence/absence of audio"""
+        if self.has_audio:
+            audio_bitrate = AAC_BITRATE if self.compatibility else OPUS_BITRATE
+        else:
+            audio_bitrate = 0
+
         bitrate: int = (
             floor(0.99 * self.target_size * 1024 * 8 / self.duration) - audio_bitrate
         )
@@ -90,36 +85,51 @@ class Work:
         return bitrate
 
     def make_ffmpeg_commands(self) -> tuple[list[str], list[str]]:
+        """Creates the FFMPEG commands based on input parameters"""
         ffmpeg_command_pass1: list[str] = ["ffmpeg"]
 
-        ffmpeg_command_pass1 += ["-y", "-i", str(self.input), "-c:v"]
+        ffmpeg_command_pass1.append("-y")  # Overwrite files
+        ffmpeg_command_pass1 += ["-i", str(self.input)]  # Input
 
+        # Video Codec
         if self.compatibility:
-            ffmpeg_command_pass1 += ["libx264", "-preset", "faster"]
+            ffmpeg_command_pass1 += [
+                "-c:v",
+                "libx264",
+                "-preset",
+                "faster",
+                "-b:v",
+                f"{self.bitrate}k",
+            ]
         else:
-            ffmpeg_command_pass1 += ["libsvtav1", "-preset", "6"]
+            ffmpeg_command_pass1 += [
+                "-c:v",
+                "libsvtav1",
+                "-preset",
+                "6",
+                "-svtav1-params",
+                f"rc=2:pred-struct=1:tbr={self.bitrate}k",
+            ]
 
-        ffmpeg_command_pass1 += [
-            "-b:v",
-            str(self.bitrate) + "k",
-            "-passlogfile",
-            ".",
-        ]
+        ffmpeg_command_pass1 += ["-passlogfile", "."]  # 2 Pass logfile path
 
+        # Framerate
         if self.higher_framerate:
             ffmpeg_command_pass1 += ["-r", str(min(60, self.framerate))]
         else:
             ffmpeg_command_pass1 += ["-r", str(min(30, self.framerate))]
 
+        # Resolution
         if self.resolution:
             ffmpeg_command_pass1 += ["-vf", f"scale={self.resolution}"]
 
         ffmpeg_command_pass2 = ffmpeg_command_pass1 + ["-pass", "2"]
 
-        if self.compatibility:
-            ffmpeg_command_pass2 += ["-c:a", "aac", "-b:a", f"{AAC_BITRATE}k"]
-        else:
-            ffmpeg_command_pass2 += ["-c:a", "libopus", "-b:a", f"{OPUS_BITRATE}k"]
+        if self.has_audio:
+            if self.compatibility:
+                ffmpeg_command_pass2 += ["-c:a", "aac", "-b:a", f"{AAC_BITRATE}k"]
+            else:
+                ffmpeg_command_pass2 += ["-c:a", "libopus", "-b:a", f"{OPUS_BITRATE}k"]
 
         ffmpeg_command_pass2 += [str(self.output)]
 
@@ -138,7 +148,8 @@ class Work:
     ): ...
 
     def run(self):
-        total_seconds = 0
+        """Runs the FFMPEG commands and sends progression callbacks"""
+        elapsed_seconds = 0
         for command in self.ffmpeg_commands:
             previous_seconds = 0
             try:
@@ -148,20 +159,21 @@ class Work:
                     stderr=subprocess.STDOUT,
                     universal_newlines=True,
                 )
+                if process.stdout:
+                    for line in process.stdout:
+                        match = re.search(r"\btime=(\d{2}:\d{2}:\d{2}(?:\.\d+)?)", line)
+                        if match is not None:
+                            h, m, s = match.group(1).split(":")
+                            seconds = int(h) * 3600 + int(m) * 60 + float(s)
 
-                for line in process.stdout:
-                    # if line.strip():
-                    #     print(line)
-                    match = re.search(r"\btime=(\d{2}:\d{2}:\d{2}(?:\.\d+)?)", line)
-                    if match is not None:
-                        h, m, s = match.group(1).split(":")
-                        seconds = int(h) * 3600 + int(m) * 60 + float(s)
+                            completion_percentage = ceil(
+                                100 * elapsed_seconds / (self.duration * 2)
+                            )
+                            self.callback(completion_percentage)
 
-                        self.callback(ceil(100 * total_seconds / (self.duration * 2)))
+                            elapsed_seconds += seconds - previous_seconds
 
-                        total_seconds += seconds - previous_seconds
-
-                        previous_seconds = seconds
+                            previous_seconds = seconds
             except subprocess.CalledProcessError as e:
                 print(f"Error processing: {e.output.decode()}")
 
