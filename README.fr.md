@@ -20,6 +20,8 @@ Ce programme sert a compresser vers une taille spécifique des vidéos courtes p
 | `-f` `--framerate`     | Pas utilisé       |                                             | Utiliser une plus haute fréquence d'images   |
 | `-r` `--resolution`    | `1280:720`        | `Any` (voir la doc libx264 et/ou libsvtav1) | Définir la résolution de sortie              |
 | `-c` `--compatibility` | Pas utilisé       |                                             | Utiliser des codecs plus anciens (h264, aac) |
+| `-p` `--preview`       | Pas utilisé       |                                             | Prévisualise les paramètres                  |
+| `-y` `--overwrite`     | Pas utilisé       |                                             | Écrase le fichier de sortie si il existe     |
 
 
 ### Examples

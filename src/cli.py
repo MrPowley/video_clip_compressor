@@ -8,8 +8,8 @@ import core
 
 
 def get_version():
-    with open(Path(__file__).parent.parent / "pyproject.toml", "rb") as f:
-        return tomllib.load(f)["project"]["version"]
+    version_file = Path(__file__).resolve().parent / "VERSION"
+    return version_file.read_text().strip()
 
 
 __version__ = get_version()
@@ -67,6 +67,13 @@ def main():
         default=False,
     )
     parser.add_argument(
+        "-y",
+        "--overwrite",
+        help="overwrite output file is it exists",
+        action="store_true",
+        default=False,
+    )
+    parser.add_argument(
         "-v",
         "--version",
         help="prints version and exit",
@@ -89,10 +96,21 @@ def main():
         compatibility=args.compatibility,
     )
 
+    if work.output.exists():
+        if args.overwrite:
+            print("Output file already exists : Overwriting on user command")
+        else:
+            print("Output file already exists : Aborting")
+            print("Use '-y' to overwrite output file")
+            return
+
     if args.preview:
         show_preview(work)
     else:
+        print("Beginning encoding")
         work.run()
+
+    print("Encoding done")
 
 
 if __name__ == "__main__":

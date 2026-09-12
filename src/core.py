@@ -15,6 +15,9 @@ AAC_BITRATE: int = 64
 OPUS_BITRATE: int = 32
 RESOLUTIONS = ((1920, 1080), (1600, 900), (1280, 720), (960, 540), (640, 360))
 
+ROOT_DIR = Path(__file__).resolve().parent
+TEMP_DIRECTORY = ROOT_DIR / "temp"
+
 
 class Work:
     def __init__(
@@ -38,6 +41,8 @@ class Work:
         if not self.is_valid():
             print("Invalid parameters")
             return
+
+        Path.mkdir(TEMP_DIRECTORY, exist_ok=True)
 
         self.duration, self.framerate, self.has_audio = self.get_metadata()
         self.bitrate: int = self.calculate_bitrate()
@@ -111,7 +116,10 @@ class Work:
                 f"rc=2:pred-struct=1:tbr={self.bitrate}k",
             ]
 
-        ffmpeg_command_pass1 += ["-passlogfile", "."]  # 2 Pass logfile path
+        ffmpeg_command_pass1 += [
+            "-passlogfile",
+            TEMP_DIRECTORY / "passlogfile",
+        ]  # 2 Pass logfile path
 
         # Framerate
         if self.higher_framerate:

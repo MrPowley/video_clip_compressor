@@ -49,6 +49,7 @@ GUI_ENTRY = SRC / GUI_ENTRY_POINT
 FFMPEG = BIN / FFMPEG_NAME
 LICENSE = ROOT / LICENSE_NAME
 THIRD_PARTY_LICENSE = ROOT / "LICENSES" / THIRD_PARTY_LICENSE_NAME
+VERSION_FILE = SRC / "VERSION"
 
 BUILD = ROOT / "build"
 DIST = ROOT / "dist"
@@ -62,7 +63,6 @@ CLI_ZIP = DIST / (CLI_NAME + ".zip")
 CLI_ZIP_FFMPEG = DIST / (CLI_NAME_FFMPEG + ".zip")
 GUI_ZIP = DIST / (GUI_NAME + ".zip")
 GUI_ZIP_FFMPEG = DIST / (GUI_NAME_FFMPEG + ".zip")
-
 
 def run(command):
     print("\n>", " ".join(map(str, command)))
@@ -101,6 +101,7 @@ def build_cli(include_ffmpeg: bool = True):
     command += [
         f"--include-data-files={LICENSE}={LICENSE_NAME}",
         f"--include-data-files={THIRD_PARTY_LICENSE}={THIRD_PARTY_LICENSE_NAME}",
+        f"--include-data-files={VERSION_FILE}=VERSION",
         str(CLI_ENTRY),
     ]
 
@@ -157,6 +158,7 @@ def build_gui(include_ffmpeg: bool = True):
     command += [
         f"--include-data-files={LICENSE}={LICENSE_NAME}",
         f"--include-data-files={THIRD_PARTY_LICENSE}={THIRD_PARTY_LICENSE_NAME}",
+        f"--include-data-files={VERSION_FILE}=VERSION",
         str(GUI_ENTRY),
     ]
 

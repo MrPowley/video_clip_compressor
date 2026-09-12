@@ -20,13 +20,21 @@ from PySide6.QtWidgets import (
 import core
 
 
+def get_version():
+    version_file = Path(__file__).resolve().parent / "VERSION"
+    return version_file.read_text().strip()
+
+
+__version__ = get_version()
+
+
 class MainWindow(QMainWindow):
     """Main application window."""
 
     def __init__(self) -> None:
         super().__init__()
 
-        self.setWindowTitle("Video clip compressor")
+        self.setWindowTitle(f"Video Clip Compressor - {__version__}")
 
         central = QWidget()
         self.setCentralWidget(central)

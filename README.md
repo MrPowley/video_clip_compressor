@@ -21,6 +21,7 @@ This program is used to compress short videos to a specific size so they can be 
 | `-r` `--resolution`    | `1280:720` | `Any` (See libx264 and/or libsvtav1 doc) | Set output resolution              |
 | `-c` `--compatibility` | Not used   |                                          | Use older codecs (h264, aac)       |
 | `-p` `--preview`       | Not used   |                                          | Show work infos without running it |
+| `-y` `--overwrite`     | Not used   |                                          | Overwrite output file is it exists |
 
 
 ### Examples
