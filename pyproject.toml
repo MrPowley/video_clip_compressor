@@ -1,0 +1,11 @@
+[project]
+name = "video-clip-compressor"
+version = "2.0.0a2"
+description = "Compress video clips to a specified size"
+readme = "README.md"
+requires-python = ">=3.10, <=3.14"
+dependencies = [
+    "nuitka[all]>=4.2.1",
+    "pymediainfo>=7.0.1",
+    "pyside6>=6.11.2",
+]

@@ -1,0 +1,5 @@
+Third-Party Libraries & Licenses:
+
+PySide6: Licensed under LGPLv3. See full license in LICENSES/LGPLv3.txt .
+
+FFmpeg: This software uses code of FFmpeg (https://ffmpeg.org) licensed under the GPLv2 or newer. Source code for FFmpeg can be downloaded at https://ffmpeg.org. See LICENSE.
